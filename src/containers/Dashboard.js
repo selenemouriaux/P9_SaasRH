@@ -159,29 +159,60 @@ export default class {
     this.onNavigate(ROUTES_PATH["Dashboard"]);
   };
 
+  // CODE CORRIGÉ :
   handleShowTickets(e, bills, index) {
-    if (this.counter === undefined || this.index !== index) this.counter = 0;
-    if (this.index === undefined || this.index !== index) this.index = index;
-    if (this.counter % 2 === 0) {
-      $(`#arrow-icon${this.index}`).css({ transform: "rotate(0deg)" });
-      $(`#status-bills-container${this.index}`).html(
-        cards(filteredBills(bills, getStatus(this.index)))
-      );
-      this.counter++;
-    } else {
-      $(`#arrow-icon${this.index}`).css({ transform: "rotate(90deg)" });
-      $(`#status-bills-container${this.index}`).html("");
-      this.counter++;
-    }
+    // Initialisation de l'objet counters s'il n'existe pas
+    if (this.counters === undefined) this.counters = {};
+    // Initialisation du compteur pour cette catégorie si elle n'existe pas
+    if (this.counters[index] === undefined) this.counters[index] = 0;
 
-    bills.forEach((bill) => {
-      $(`#open-bill${bill.id}`).click((e) =>
-        this.handleEditTicket(e, bill, bills)
+    if (this.counters[index] % 2 === 0) {
+      $(`#arrow-icon${index}`).css({ transform: "rotate(0deg)" });
+      $(`#status-bills-container${index}`).html(
+        cards(filteredBills(bills, getStatus(index)))
       );
-    });
+      this.counters[index]++;
+
+      // création des listeners SEULEMENT sur les bills de cette liste
+      const filteredBillsList = filteredBills(bills, getStatus(index));
+      filteredBillsList.forEach((bill) => {
+        $(`#open-bill${bill.id}`).click((e) =>
+          this.handleEditTicket(e, bill, bills)
+        );
+      });
+    } else {
+      $(`#arrow-icon${index}`).css({ transform: "rotate(90deg)" });
+      $(`#status-bills-container${index}`).html("");
+      this.counters[index]++;
+    }
 
     return bills;
   }
+
+  // CODE D'ORIGINE :
+  // handleShowTickets(e, bills, index) {
+  //   if (this.counter === undefined || this.index !== index) this.counter = 0;
+  //   if (this.index === undefined || this.index !== index) this.index = index;
+  //   if (this.counter % 2 === 0) {
+  //     $(`#arrow-icon${this.index}`).css({ transform: "rotate(0deg)" });
+  //     $(`#status-bills-container${this.index}`).html(
+  //       cards(filteredBills(bills, getStatus(this.index)))
+  //     );
+  //     this.counter++;
+  //   } else {
+  //     $(`#arrow-icon${this.index}`).css({ transform: "rotate(90deg)" });
+  //     $(`#status-bills-container${this.index}`).html("");
+  //     this.counter++;
+  //   }
+  //
+  //   bills.forEach((bill) => {
+  //     $(`#open-bill${bill.id}`).click((e) =>
+  //       this.handleEditTicket(e, bill, bills)
+  //     );
+  //   });
+  //
+  //   return bills;
+  // }
 
   getBillsAllUsers = () => {
     if (this.store) {
