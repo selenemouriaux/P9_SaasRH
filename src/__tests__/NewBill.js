@@ -413,10 +413,11 @@ describe("Given I am connected as an employee", () => {
   });
 });
 
-// Test d'intégration POST
+// Tests d'intégration
 describe("Given I am a user connected as Employee", () => {
+  // Test d'intégration GET
   describe("When I navigate to NewBill page", () => {
-    test("Then the new bill form should be rendered from API", async () => {
+    test("Then the new bill form should be rendered", async () => {
       // Given
       localStorage.setItem(
         "user",
@@ -437,6 +438,90 @@ describe("Given I am a user connected as Employee", () => {
       expect(screen.getByTestId("expense-type")).toBeTruthy();
       expect(screen.getByTestId("expense-name")).toBeTruthy();
       expect(screen.getByTestId("file")).toBeTruthy();
+    });
+  });
+
+  // Test d'intégration POST
+  describe("When I submit a new bill", () => {
+    test("Then it should post the bill to the API and navigate to Bills page", async () => {
+      // Given
+      localStorage.setItem(
+        "user",
+        JSON.stringify({ type: "Employee", email: "employee@test.com" })
+      );
+
+      // Espionne les méthodes avant la navigation
+      const billsObj = mockStore.bills();
+      const createSpy = jest.spyOn(billsObj, "create");
+      const updateSpy = jest.spyOn(billsObj, "update");
+
+      const root = document.createElement("div");
+      root.setAttribute("id", "root");
+      document.body.innerHTML = "";
+      document.body.append(root);
+      router();
+
+      // When
+      window.onNavigate(ROUTES_PATH.NewBill);
+      await waitFor(() => screen.getByTestId("form-new-bill"));
+
+      // Upload du fichier (stocké localement, pas d'appel API)
+      const fileInput = screen.getByTestId("file");
+      const file = new File(["image"], "test.jpg", { type: "image/jpeg" });
+      Object.defineProperty(fileInput, "files", { value: [file] });
+      fireEvent.change(fileInput);
+
+      fireEvent.change(screen.getByTestId("expense-type"), {
+        target: { value: "Transports" },
+      });
+      fireEvent.change(screen.getByTestId("expense-name"), {
+        target: { value: "Vol Paris Londres" },
+      });
+      fireEvent.change(screen.getByTestId("datepicker"), {
+        target: { value: "2023-04-15" },
+      });
+      fireEvent.change(screen.getByTestId("amount"), {
+        target: { value: "250" },
+      });
+      fireEvent.change(screen.getByTestId("vat"), {
+        target: { value: "50" },
+      });
+      fireEvent.change(screen.getByTestId("pct"), {
+        target: { value: "20" },
+      });
+      fireEvent.change(screen.getByTestId("commentary"), {
+        target: { value: "Déplacement professionnel" },
+      });
+
+      // Soumet le form
+      const form = screen.getByTestId("form-new-bill");
+      fireEvent.submit(form);
+
+      // Then - Vérifie que create a été appelée pour upload le fichier
+      await waitFor(() => expect(createSpy).toHaveBeenCalled());
+
+      // Vérifie que update a été appelée pour créer la bill
+      await waitFor(() => expect(updateSpy).toHaveBeenCalled());
+
+      // Vérifie les données envoyées
+      const updateCall = updateSpy.mock.calls[0][0];
+      expect(updateCall.data).toBeDefined();
+      const billData = JSON.parse(updateCall.data);
+
+      // Vérifie les champs
+      expect(billData.type).toBe("Transports");
+      expect(billData.name).toBe("Vol Paris Londres");
+      expect(billData.amount).toBe(250);
+      expect(billData.vat).toBe("50");
+      expect(billData.pct).toBe(20);
+      expect(billData.commentary).toBe("Déplacement professionnel");
+      expect(billData.status).toBe("pending");
+      expect(billData.fileName).toBe("test.jpg");
+
+      // Vérifie la navigation vers bills après succès
+      await waitFor(() => {
+        expect(screen.getByText("Mes notes de frais")).toBeTruthy();
+      });
     });
   });
 });
