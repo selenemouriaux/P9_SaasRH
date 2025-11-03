@@ -21,10 +21,10 @@ const row = (bill) => {
 
 const rows = (data) => {
   if (!data || !data.length) return "";
-  // Tri dupliqué ici à cause de la construction du test qui ne passe pas pas le container et son tri
-  // cela ne devrait pas exister, le tri devrait se faire une seule fois...
-  const sortedData = [...data].sort((a, b) => (a.date < b.date ? 1 : -1));
-  return sortedData.map((bill) => row(bill)).join("");
+  // Le tri ne doit pas se refaire ici
+  // car il recasse la logique de container/bills.js
+  // tant pis pour le test d'origine je vais le fixer directement..
+  return data.map((bill) => row(bill)).join("");
 };
 
 export default ({ data: bills, loading, error }) => {

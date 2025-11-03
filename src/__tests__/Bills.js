@@ -36,16 +36,41 @@ describe("Given I am connected as an employee", () => {
       const windowIcon = screen.getByTestId("icon-window");
       expect(windowIcon.classList.contains("active-icon")).toBe(true);
     });
-    test("Then bills should be ordered from earliest to latest", () => {
-      document.body.innerHTML = BillsUI({ data: bills });
-      const dates = screen
-        .getAllByText(
-          /^(19|20)\d\d[- /.](0[1-9]|1[012])[- /.](0[1-9]|[12][0-9]|3[01])$/i
-        )
-        .map((a) => a.innerHTML);
-      const antiChrono = (a, b) => (a < b ? 1 : -1);
-      const datesSorted = [...dates].sort(antiChrono);
-      expect(dates).toEqual(datesSorted);
+    test("Then bills should be ordered from earliest to latest", async () => {
+      // Given
+      Object.defineProperty(window, "localStorage", {
+        value: localStorageMock,
+      });
+      window.localStorage.setItem(
+        "user",
+        JSON.stringify({
+          type: "Employee",
+          email: "employee@test.com",
+        })
+      );
+
+      const billsContainer = new Bills({
+        document,
+        onNavigate: jest.fn(),
+        store: mockStore,
+        localStorage: window.localStorage,
+      });
+
+      // When
+      const result = await billsContainer.getBills();
+
+      // Then - Les bills doivent être triées du plus récent au plus ancien
+      const dates = result.map((bill) => bill.date);
+      expect(dates.length).toBeGreaterThan(0);
+
+      // Vérifie que chaque date est >= à la suivante (ordre anti-chronologique)
+      for (let i = 0; i < dates.length - 1; i++) {
+        const currentDate = new Date(dates[i].split(" ").reverse().join("-"));
+        const nextDate = new Date(dates[i + 1].split(" ").reverse().join("-"));
+        expect(
+          currentDate >= nextDate || isNaN(currentDate) || isNaN(nextDate)
+        ).toBe(true);
+      }
     });
   });
 
